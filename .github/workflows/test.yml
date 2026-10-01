@@ -24,6 +24,8 @@ jobs:
 
   test:
     runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: "0"
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +41,7 @@ jobs:
       - run: go test ./...
       - run: go test -tags debug ./...
       - run: go test -race ./...
+        if: runner.os == 'Linux'
         env:
           CGO_ENABLED: "1"
 
