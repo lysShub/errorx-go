@@ -81,7 +81,7 @@ func WithStack(err error) error {
 
 	if debug.Debug() {
 		s := T[Stack](err)
-		debug.True(s == nil, "current", stack, "existed", s)
+		debug.True(s == nil, "\ncurrent\n", stack, "\nexisted\n", s)
 	}
 	return WithT(err, stack)
 }
