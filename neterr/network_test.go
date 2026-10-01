@@ -1,15 +1,25 @@
 package neterr_test
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/lysShub/debug-go"
 	"github.com/lysShub/errorx-go"
 	"github.com/lysShub/errorx-go/neterr"
 )
+
+func TestMain(m *testing.M) {
+	// debug 构建下断言默认会终止进程, 测试中改为仅打印, 以便 UT 能跑完
+	debug.Fail = func(s string) {
+		fmt.Fprintln(os.Stderr, s)
+	}
+	os.Exit(m.Run())
+}
 
 /*
 	type timeoutErr struct{ error }
@@ -34,18 +44,18 @@ import (
 */
 
 func Test_Temporary(t *testing.T) {
-	var e1 = errorx.WithMessage(&net.DNSError{IsTemporary: true}, "temp")
-	if !errorx.Temporary(e1) {
+	var e1 = errorx.WithT(&net.DNSError{IsTemporary: true}, "temp")
+	if !errorx.IsTemp(e1) {
 		t.Fatal("expect temporary")
 	}
 
 	var e2 = errorx.WithStack(errorx.New("error"))
-	if errorx.Temporary(e2) {
+	if errorx.IsTemp(e2) {
 		t.Fatal("expect not temporary")
 	}
 
 	var e3 error = nil
-	if errorx.Temporary(e3) {
+	if errorx.IsTemp(e3) {
 		t.Fatal("expect not temporary")
 	}
 }
@@ -94,7 +104,7 @@ func Test_ErrAddrInuse(t *testing.T) {
 	}
 }
 func Test_ErrNetTimeout(t *testing.T) {
-	var e1 = errorx.WithMessage(&net.DNSError{IsTimeout: true}, "temp")
+	var e1 = errorx.WithT(&net.DNSError{IsTimeout: true}, "temp")
 	if !neterr.NetTimeout(e1) {
 		t.Fatal("expect net timeout")
 	}

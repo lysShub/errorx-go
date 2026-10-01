@@ -6,7 +6,7 @@ import (
 )
 
 type temporaryErr struct{ err error }
-type temporary interface{ Temporary() bool }
+type Temporary interface{ Temporary() bool }
 
 func WithTemporary(err error) error {
 	if err == nil {
@@ -14,8 +14,8 @@ func WithTemporary(err error) error {
 	}
 	return &temporaryErr{err: err}
 }
-func Temporary(err error) bool {
-	var t temporary
+func IsTemporary(err error) bool {
+	var t Temporary
 	if errors.As(err, &t) {
 		return t.Temporary()
 	} else {

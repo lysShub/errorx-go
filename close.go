@@ -16,9 +16,7 @@ type CloseErr struct {
 	ErrClosed error
 }
 
-var (
-	ErrClosed = errors.New("closed")
-)
+var ErrClosed = errors.New("closed")
 
 // Close 关闭, 在回调函数中关闭各个资源, 并把错误追加到errs中
 func (c *CloseErr) Close(fn func() (errs []error)) error {
@@ -60,7 +58,7 @@ func (c *CloseErr) Error() error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	if c.err != nil && c.err == c.ErrClosed {
-		return &stackErr{err: c.err, stacks: newStacks()}
+		return WithT(c.err, newStack())
 	} else {
 		return c.err
 	}

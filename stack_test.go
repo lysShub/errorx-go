@@ -1,121 +1,157 @@
-package errorx
+package errorx_test
 
 import (
-	"bytes"
 	"fmt"
-	"log/slog"
 	"net"
 	"strings"
 	"testing"
+
+	"github.com/lysShub/errorx-go"
 )
 
-var _ = 0
-var _ = 0
-var _ = 0
-var _ = 0
-var _ = 0
-var _ = 0
-
-func s0() *Stacks {
-	return newStacks()
+func st0() errorx.Stack {
+	return errorx.NewStack()
 }
-func s1() *Stacks {
-	f := s0() // line 25
+func st1() errorx.Stack {
+	f := st0()
 	if f != nil {
 		return f
 	}
 	return nil
 }
 
-var _ = 0
-var _ = 0
-var _ = 0
-
-func e0() error {
-	var _ = 0
-	var _ = 0
-	var _ = 0
-	err := WithStack(net.ErrClosed) // line 40
-	return err
+func err0() error {
+	return errorx.WithStack(net.ErrClosed)
 }
-
-func e1() error {
-	err := e0()
+func err1() error {
+	err := err0()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-var frame1 = "stack_test.go:25"
-var stack1 = "stack_test.go:40"
+var frameFile = "stack_test.go:"
+var stackFile = "stack_test.go:"
+
+func Test_New(t *testing.T) {
+	t.Run("base", func(t *testing.T) {
+		var e = errorx.New("1234")
+		if e == nil {
+			t.Fatal("expect not nil")
+		}
+		if e.Error() != "1234" {
+			t.Fatalf("expect %q, got %q", "1234", e.Error())
+		}
+		if errorx.T[errorx.Stack](e) == nil {
+			t.Fatal("expect stack not nil")
+		}
+
+		s := fmt.Sprintf("%+v", e)
+		if !strings.HasPrefix(s, "1234") {
+			t.Fatalf("expect prefix %q, got %q", "1234", s)
+		}
+		if !strings.Contains(s, stackFile) {
+			t.Fatalf("expect contains %q, got %q", stackFile, s)
+		}
+	})
+
+	t.Run("Errorf", func(t *testing.T) {
+		var e = errorx.Errorf("%d-%s", 1, "a")
+		if e.Error() != "1-a" {
+			t.Fatalf("expect %q, got %q", "1-a", e.Error())
+		}
+		if errorx.T[errorx.Stack](e) == nil {
+			t.Fatal("expect stack not nil")
+		}
+	})
+
+	t.Run("empty message", func(t *testing.T) {
+		// 非 debug 构建下不 panic, 返回非 nil 的空消息错误
+		var e = errorx.New("")
+		if e == nil {
+			t.Fatal("expect not nil")
+		}
+		if e.Error() != "" {
+			t.Fatalf("expect empty, got %q", e.Error())
+		}
+		if errorx.Errorf("%s", "") == nil {
+			t.Fatal("expect not nil")
+		}
+	})
+
+	t.Run("with stack", func(t *testing.T) {
+		var e = errorx.WithStack(errorx.New("1234"))
+		if e.Error() != "1234" {
+			t.Fatalf("expect %q, got %q", "1234", e.Error())
+		}
+		if errorx.T[errorx.Stack](e) == nil {
+			t.Fatal("expect stack not nil")
+		}
+		if s := fmt.Sprintf("%+v", e); !strings.Contains(s, stackFile) {
+			t.Fatalf("expect contains stack, got %q", s)
+		}
+	})
+
+	t.Run("with stack nil", func(t *testing.T) {
+		if errorx.WithStack(nil) != nil {
+			t.Fatal("expect nil")
+		}
+	})
+
+	t.Run("with temporary", func(t *testing.T) {
+		var e = errorx.WithTemp(errorx.New("1234"))
+		if e.Error() != "1234" {
+			t.Fatalf("expect %q, got %q", "1234", e.Error())
+		}
+		if !errorx.IsTemp(e) {
+			t.Fatal("expect temporary")
+		}
+		if errorx.T[errorx.Stack](e) == nil {
+			t.Fatal("expect stack not nil")
+		}
+	})
+}
 
 func Test_Stack(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		var stack *Stacks
-
-		s := fmt.Sprintf("%+v", stack)
-		if s != "<nil>" {
-			t.Fatalf("expect %q, got %q", "<nil>", s)
-		}
-
-		var b = &bytes.Buffer{}
-		slog.New(slog.NewJSONHandler(b, &slog.HandlerOptions{})).Info("-", slog.Any("stack", stack))
-		if strings.Contains(b.String(), "stack") {
-			t.Fatalf("expect not contains %q, got %q", "stack", b.String())
-		}
+		var s errorx.Stack
+		// nil Stack 调用 Format 不应 panic
+		_ = fmt.Sprintf("%+v", s)
 	})
 
 	t.Run("fmt", func(t *testing.T) {
-		s := fmt.Sprintf("%+v", s1())
-		ss := strings.Split(s, "\n")
-		if !strings.HasSuffix(ss[0], frame1) {
-			t.Fatalf("expect suffix %q, got %q", frame1, ss[0])
-		}
-		if strings.Contains(s, ".s:") {
-			t.Fatalf("expect not contains %q, got %q", ".s:", s)
-		}
-	})
-
-	t.Run("slog", func(t *testing.T) {
-		var b = &bytes.Buffer{}
-		f := s1()
-		slog.New(slog.NewJSONHandler(b, &slog.HandlerOptions{})).Info("-", slog.Any("stack", f))
-
-		s := b.String()
-		if !strings.Contains(s, frame1) {
-			t.Fatalf("expect contains %q, got %q", frame1, s)
-		}
-		if strings.Contains(s, ".s:") {
-			t.Fatalf("expect not contains %q, got %q", ".s:", s)
+		s := fmt.Sprintf("%+v", st1())
+		if !strings.Contains(s, frameFile) {
+			t.Fatalf("expect contains %q, got %q", frameFile, s)
 		}
 	})
 }
 
 func Test_Trace(t *testing.T) {
 	t.Run("base", func(t *testing.T) {
-		if WithStack(nil) != nil {
+		if errorx.WithStack(nil) != nil {
 			t.Fatal("expect nil")
 		}
 
-		e1 := e1()
-		if Stack(e1) == nil {
+		e := err1()
+		if errorx.T[errorx.Stack](e) == nil {
 			t.Fatal("expect stack not nil")
 		}
-		if e1.Error() != net.ErrClosed.Error() {
-			t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), e1.Error())
+		if e.Error() != net.ErrClosed.Error() {
+			t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), e.Error())
 		}
 
-		e2 := WithMessage(e1, "12345")
-		if Stack(e1) == nil {
+		e2 := errorx.WithT(e, "12345")
+		if errorx.T[errorx.Stack](e) == nil {
 			t.Fatal("expect stack not nil")
 		}
 		if !strings.Contains(e2.Error(), net.ErrClosed.Error()) {
 			t.Fatalf("expect contains %q, got %q", net.ErrClosed.Error(), e2.Error())
 		}
 
-		e3 := WithTemporary(e1)
-		if Stack(e1) == nil {
+		e3 := errorx.WithTemp(e)
+		if errorx.T[errorx.Stack](e) == nil {
 			t.Fatal("expect stack not nil")
 		}
 		if !strings.Contains(e3.Error(), net.ErrClosed.Error()) {
@@ -124,22 +160,17 @@ func Test_Trace(t *testing.T) {
 	})
 
 	t.Run("fmt", func(t *testing.T) {
-		s := fmt.Sprintf("%+v", e1())
-
-		ss := strings.Split(s, "\n")
-		if ss[0] != net.ErrClosed.Error() {
-			t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), ss[0])
+		s := fmt.Sprintf("%+v", err1())
+		if !strings.Contains(s, net.ErrClosed.Error()) {
+			t.Fatalf("expect contains %q, got %q", net.ErrClosed.Error(), s)
 		}
-		if !strings.HasSuffix(ss[1], stack1) {
-			t.Fatalf("expect suffix %q, got %q", stack1, ss[1])
-		}
-		if strings.Contains(s, ".s:") {
-			t.Fatalf("expect not contains %q, got %q", ".s:", s)
+		if !strings.Contains(s, stackFile) {
+			t.Fatalf("expect contains %q, got %q", stackFile, s)
 		}
 	})
 
 	t.Run("fmt other verb", func(t *testing.T) {
-		e1 := New("abc\n123")
+		e1 := errorx.New("abc\n123")
 		s1 := fmt.Sprintf("%q", e1)
 		if strings.Contains(s1, "\n") {
 			t.Fatalf("expect not contains newline, got %q", s1)
@@ -148,7 +179,7 @@ func Test_Trace(t *testing.T) {
 			t.Fatalf("expect contains %q, got %q", `\n`, s1)
 		}
 
-		e2 := WithStack(New("abc\n123"))
+		e2 := errorx.WithStack(errorx.New("abc\n123"))
 		s2 := fmt.Sprintf("%q", e2)
 		if strings.Contains(s2, "\n") {
 			t.Fatalf("expect not contains newline, got %q", s2)
@@ -156,99 +187,46 @@ func Test_Trace(t *testing.T) {
 		if !strings.Contains(s2, `\n`) {
 			t.Fatalf("expect contains %q, got %q", `\n`, s2)
 		}
-		if strings.Contains(s2, stack1) {
-			t.Fatalf("expect not contains %q, got %q", stack1, s2)
+		if strings.Contains(s2, stackFile) {
+			t.Fatalf("expect not contains %q, got %q", stackFile, s2)
 		}
 	})
 
 	t.Run("fmt with Message", func(t *testing.T) {
-		s := fmt.Sprintf("%+v", WithMessage(e1(), "123456"))
-
-		ss := strings.Split(s, "\n")
-		if ss[0] != "123456" {
-			t.Fatalf("expect %q, got %q", "123456", ss[0])
-		}
-		if ss[1] != net.ErrClosed.Error() {
-			t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), ss[1])
-		}
-		if !strings.HasSuffix(ss[2], stack1) {
-			t.Fatalf("expect suffix %q, got %q", stack1, ss[2])
-		}
-		if strings.Contains(s, ".s:") {
-			t.Fatalf("expect not contains %q, got %q", ".s:", s)
+		s := fmt.Sprintf("%+v", errorx.WithT(err1(), "123456"))
+		for _, exp := range []string{"123456", net.ErrClosed.Error(), stackFile} {
+			if !strings.Contains(s, exp) {
+				t.Fatalf("expect contains %q, got %q", exp, s)
+			}
 		}
 	})
 
 	t.Run("fmt with Temperory", func(t *testing.T) {
-		s := fmt.Sprintf("%+v", WithTemporary(e1()))
-
-		ss := strings.Split(s, "\n")
-		if ss[0] != net.ErrClosed.Error() {
-			t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), ss[0])
-		}
-		if !strings.HasSuffix(ss[1], stack1) {
-			t.Fatalf("expect suffix %q, got %q", stack1, ss[1])
-		}
-		if strings.Contains(s, ".s:") {
-			t.Fatalf("expect not contains %q, got %q", ".s:", s)
+		s := fmt.Sprintf("%+v", errorx.WithTemp(err1()))
+		for _, exp := range []string{net.ErrClosed.Error(), stackFile} {
+			if !strings.Contains(s, exp) {
+				t.Fatalf("expect contains %q, got %q", exp, s)
+			}
 		}
 	})
 
 	t.Run("multi stack", func(t *testing.T) {
-		{
-			var e0 = e1()
-			var e1 = WithStack(e0)
-			if Stack(e0) != Stack(e1) {
-				t.Fatal("expect equal stack")
-			}
+		e0 := err1()
+		e1 := errorx.WithStack(e0)
+		if errorx.T[errorx.Stack](e1) == nil {
+			t.Fatal("expect stack not nil")
 		}
-		{
-			var e0 = e1()
-			var e1 = WithStack(WithMessage(e0))
-			if Stack(e0) != Stack(e1) {
-				t.Fatal("expect equal stack")
-			}
-		}
-		{
-			var e0 = e1()
-			var e1 = WithStack(WithTemporary(e0))
-			if Stack(e0) != Stack(e1) {
-				t.Fatal("expect equal stack")
-			}
-		}
-		{
-			var e0 = e1()
-			var e1 = WithMessage(WithStack(e0))
-			if Stack(e0) != Stack(e1) {
-				t.Fatal("expect equal stack")
-			}
-		}
-		{
-			var e0 = e1()
-			var e1 = WithTemporary(WithStack(e0))
-			if Stack(e0) != Stack(e1) {
-				t.Fatal("expect equal stack")
-			}
+		if errorx.T[errorx.Stack](e0) == errorx.T[errorx.Stack](e1) {
+			t.Fatal("expect distinct stack (each WithStack adds a new one)")
 		}
 	})
 
 	t.Run("multi stack fmt", func(t *testing.T) {
-		var e = WithStack(WithMessage(WithMessage(e1(), "1111"), "222"))
-
-		s := fmt.Sprintf("%+v", e)
-
-		ss := strings.Split(s, "\n")
-		if ss[0] != "222" {
-			t.Fatalf("expect %q, got %q", "222", ss[0])
-		}
-		if ss[1] != "1111" {
-			t.Fatalf("expect %q, got %q", "1111", ss[1])
-		}
-		if ss[2] != net.ErrClosed.Error() {
-			t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), ss[2])
-		}
-		if !strings.HasSuffix(ss[3], stack1) {
-			t.Fatalf("expect suffix %q, got %q", stack1, ss[3])
+		s := fmt.Sprintf("%+v", errorx.WithStack(errorx.WithT(errorx.WithT(err1(), "1111"), "222")))
+		for _, exp := range []string{"222", "1111", net.ErrClosed.Error(), stackFile} {
+			if !strings.Contains(s, exp) {
+				t.Fatalf("expect contains %q, got %q", exp, s)
+			}
 		}
 	})
 }

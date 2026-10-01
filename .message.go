@@ -1,8 +1,9 @@
 package errorx
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 type messageErr struct {
@@ -12,23 +13,12 @@ type messageErr struct {
 }
 type message interface{ Message() string }
 
-func WithMessage(err error, msg ...string) error {
-	switch len(msg) {
-	case 0:
-		if err == nil {
-			return nil
-		}
-		return &messageErr{err: err, msg: ""}
-	case 1:
-		if err == nil && msg[0] == "" {
-			return nil
-		}
-		return &messageErr{err: err, msg: msg[0]}
-	default:
-		panic(len(msg))
-	}
+func WithMessage(err error, msg string) error {
+	return errors.WithMessage(err, msg)
 }
 func Message(err error) string {
+	return errors.me
+
 	var m message
 	if errors.As(err, &m) {
 		return m.Message()

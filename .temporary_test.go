@@ -11,7 +11,7 @@ import (
 func Test_Temporary(t *testing.T) {
 	{
 		e := WithTemporary(net.ErrClosed)
-		if !Temporary(e) {
+		if !IsTemporary(e) {
 			t.Fatal("expect temporary")
 		}
 		if e.Error() != net.ErrClosed.Error() {
@@ -20,7 +20,7 @@ func Test_Temporary(t *testing.T) {
 	}
 	{
 		e := WithStack(WithTemporary(net.ErrClosed))
-		if !Temporary(e) {
+		if !IsTemporary(e) {
 			t.Fatal("expect temporary")
 		}
 		if e.Error() != net.ErrClosed.Error() {
@@ -29,7 +29,7 @@ func Test_Temporary(t *testing.T) {
 	}
 	{
 		e := &net.DNSError{IsTemporary: true}
-		if !Temporary(e) {
+		if !IsTemporary(e) {
 			t.Fatal("expect temporary")
 		}
 	}
