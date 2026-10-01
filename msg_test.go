@@ -12,13 +12,13 @@ import (
 func Test_Message(t *testing.T) {
 	t.Run("base", func(t *testing.T) {
 		{
-			// 没有底层错误 -> nil
+			// nil underlying error -> nil
 			if errorx.WithMessage(nil, "12345") != nil {
 				t.Fatal("expect nil")
 			}
 		}
 		{
-			// 空消息不显示
+			// empty message is not rendered
 			e := errorx.WithMessage(net.ErrClosed, "")
 			if e.Error() != net.ErrClosed.Error() {
 				t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), e.Error())
@@ -31,7 +31,7 @@ func Test_Message(t *testing.T) {
 			}
 		}
 		{
-			// 底层错误 + 消息
+			// underlying error plus message
 			e := errorx.WithMessage(net.ErrClosed, "12345")
 			if e.Error() != net.ErrClosed.Error() {
 				t.Fatalf("expect %q, got %q", net.ErrClosed.Error(), e.Error())

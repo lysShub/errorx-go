@@ -14,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// debug 构建下断言默认会终止进程, 测试中改为仅打印, 以便 UT 能跑完
+	// Assertions abort the process in debug builds; print only so tests can finish.
 	debug.Fail = func(s string) {
 		fmt.Fprintln(os.Stderr, s)
 	}

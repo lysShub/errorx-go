@@ -16,7 +16,7 @@ import (
 )
 
 func Test_CloseErr(t *testing.T) {
-	t.Run("close函数为nil", func(t *testing.T) {
+	t.Run("nil close func", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 
 		err := closeErr.Close(nil)
@@ -33,7 +33,7 @@ func Test_CloseErr(t *testing.T) {
 		}
 	})
 
-	t.Run("自定义ClosedErr", func(t *testing.T) {
+	t.Run("custom ClosedErr", func(t *testing.T) {
 		var closeErr = errorx.CloseErr{ErrClosed: net.ErrClosed}
 
 		err := closeErr.Close(nil)
@@ -50,7 +50,7 @@ func Test_CloseErr(t *testing.T) {
 		}
 	})
 
-	t.Run("close没有发生错误", func(t *testing.T) {
+	t.Run("close without error", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 
 		err := closeErr.Close(func() (errs []error) { return nil })
@@ -67,7 +67,7 @@ func Test_CloseErr(t *testing.T) {
 		}
 	})
 
-	t.Run("close中发生错误, 只记录第一个错误", func(t *testing.T) {
+	t.Run("keep only the first error", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 
 		e1 := closeErr.Close(func() (errs []error) {
@@ -90,7 +90,7 @@ func Test_CloseErr(t *testing.T) {
 			t.Fatalf("expect not contains %q, got %q", "5678", e2.Error())
 		}
 
-		// close出错, 重复close, 也会返回最初错误
+		// an error from close is kept and returned by repeated Close calls
 		e3 := closeErr.Close(nil)
 		if !strings.Contains(e3.Error(), "1234") {
 			t.Fatalf("expect contains %q, got %q", "1234", e3.Error())
@@ -100,7 +100,7 @@ func Test_CloseErr(t *testing.T) {
 		}
 	})
 
-	t.Run("直接调用Error()、Closed()", func(t *testing.T) {
+	t.Run("call Error() and Closed() directly", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 		if closeErr.Closed() {
 			t.Fatal("expect not closed")
@@ -109,7 +109,7 @@ func Test_CloseErr(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	t.Run("closing时调用Error()", func(t *testing.T) {
+	t.Run("call Error() while closing", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 
 		var wg = &sync.WaitGroup{}
@@ -121,7 +121,7 @@ func Test_CloseErr(t *testing.T) {
 				return nil
 			})
 		}()
-		wg.Wait() // 确保携程已执行
+		wg.Wait() // ensure the goroutine has started
 
 		start := time.Now()
 		if !errors.Is(closeErr.Error(), errorx.ErrClosed) {
@@ -131,7 +131,7 @@ func Test_CloseErr(t *testing.T) {
 			t.Fatalf("expect ~%v, got %v", time.Second, d)
 		}
 	})
-	t.Run("closing时调用Closed()", func(t *testing.T) {
+	t.Run("call Closed() while closing", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 
 		var wg = &sync.WaitGroup{}
@@ -143,7 +143,7 @@ func Test_CloseErr(t *testing.T) {
 				return nil
 			})
 		}()
-		wg.Wait() // 确保携程已执行
+		wg.Wait() // ensure the goroutine has started
 
 		start := time.Now()
 		if !closeErr.Closed() {
@@ -153,7 +153,7 @@ func Test_CloseErr(t *testing.T) {
 			t.Fatalf("expect ~%v, got %v", time.Duration(0), d)
 		}
 	})
-	t.Run("close后调用Error()、Closed()", func(t *testing.T) {
+	t.Run("call Error() and Closed() after close", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 		closeErr.Close(nil)
 
@@ -165,7 +165,7 @@ func Test_CloseErr(t *testing.T) {
 		}
 	})
 
-	t.Run("closing时调用Close()", func(t *testing.T) {
+	t.Run("call Close() while closing", func(t *testing.T) {
 		var closeErr errorx.CloseErr
 
 		var wg = &sync.WaitGroup{}

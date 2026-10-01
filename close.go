@@ -12,13 +12,14 @@ type CloseErr struct {
 	done   chan struct{}
 	closed atomic.Bool
 
-	// 当Close时没有错误, 后续重复调用Close时将返回此错误, 默认值为[ErrClosed]
+	// ErrClosed is returned by repeated Close calls after a successful close;
+	// defaults to ErrClosed.
 	ErrClosed error
 }
 
 var ErrClosed = errors.New("closed")
 
-// Close 关闭, 在回调函数中关闭各个资源, 并把错误追加到errs中
+// Close invokes fn to release resources and keeps the first error it returns.
 func (c *CloseErr) Close(fn func() (errs []error)) error {
 	if c.closed.Load() {
 		return c.Error()
@@ -37,7 +38,7 @@ func (c *CloseErr) Close(fn func() (errs []error)) error {
 		for _, e := range fn() {
 			if e != nil {
 				c.err = e
-				break // 只收集最初的错误
+				break // keep only the first error
 			}
 		}
 	}
@@ -53,7 +54,7 @@ func (c *CloseErr) Close(fn func() (errs []error)) error {
 	}
 }
 
-// Error 返回Close时的err, 没有Close时返回nil
+// Error returns the error recorded by Close, or nil if Close was never called.
 func (c *CloseErr) Error() error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -66,7 +67,7 @@ func (c *CloseErr) Error() error {
 
 func (c *CloseErr) Closed() bool { return c.closed.Load() }
 
-// Done 关闭通知
+// Done returns a channel that is closed once Close is called.
 func (c *CloseErr) Done() <-chan struct{} {
 	c.mu.RLock()
 	done := c.done

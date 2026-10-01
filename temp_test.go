@@ -69,7 +69,7 @@ func Test_Warn(t *testing.T) {
 		if !errorx.IsTemp(e) {
 			t.Fatal("expect temporary")
 		}
-		// debug 构建附带堆栈, 非 debug 构建不带栈
+		// debug builds attach a stack, non-debug builds do not
 		if debug.Debug() {
 			if errorx.T[errorx.Stack](e) == nil {
 				t.Fatal("expect stack in debug")

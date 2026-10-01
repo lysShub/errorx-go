@@ -67,7 +67,7 @@ func Test_New(t *testing.T) {
 	})
 
 	t.Run("empty message", func(t *testing.T) {
-		// 非 debug 构建下不 panic, 返回非 nil 的空消息错误
+		// non-debug builds do not panic and return a non-nil empty-message error
 		var e = errorx.New("")
 		if e == nil {
 			t.Fatal("expect not nil")
@@ -116,7 +116,7 @@ func Test_New(t *testing.T) {
 func Test_Stack(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		var s errorx.Stack
-		// nil Stack 调用 Format 不应 panic
+		// Format on a nil Stack must not panic
 		_ = fmt.Sprintf("%+v", s)
 	})
 

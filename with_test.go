@@ -76,7 +76,7 @@ func Test_WithT(t *testing.T) {
 			t.Fatalf("expect %q, got %q", "base: msg", s)
 		}
 
-		// 空字符串扩展不显示
+		// an empty string extension is not rendered
 		if s := fmt.Sprintf("%v", errorx.WithT(errors.New("base"), "")); s != "base" {
 			t.Fatalf("expect %q, got %q", "base", s)
 		}

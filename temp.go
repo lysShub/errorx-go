@@ -10,7 +10,7 @@ import (
 type temporary struct{} //
 var temp = temporary{}
 
-// Warn 异常, 区别于错误, debug模式附带堆栈
+// Warn creates a temporary-marked error, carrying a stack in debug builds.
 func Warn(msg string) error {
 	if debug.Debug() {
 		debug.NotEqual(msg, "", "errorx: empty message")
