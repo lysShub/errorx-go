@@ -43,11 +43,7 @@ func (t Stack) Format(s fmt.State, verb rune) {
 	}
 }
 
-func NewStack() Stack {
-	var s stack
-	runtime.Callers(2, s[:])
-	return &s
-}
+func NewStack() Stack { return newStack() }
 
 //go:noinline
 func newStack() Stack {

@@ -71,9 +71,3 @@ var ErrWouldBlock = windows.WSAEWOULDBLOCK
 func wouldBlock(err error) bool {
 	return errors.Is(err, windows.WSAEWOULDBLOCK)
 }
-
-var ErrAccessDenied = windows.ERROR_ACCESS_DENIED
-
-func accessDenied(err error) bool {
-	return errors.Is(err, windows.ERROR_ACCESS_DENIED)
-}

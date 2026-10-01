@@ -9,4 +9,3 @@ func AddrNotAvail(err error) bool   { return addrNotAvail(err) }
 func NetTimeout(err error) bool     { return netTimeout(err) }
 func AddrInuse(err error) bool      { return addrInuse(err) }
 func WouldBlock(err error) bool     { return wouldBlock(err) }
-func AccessDenied(err error) bool   { return accessDenied(err) }

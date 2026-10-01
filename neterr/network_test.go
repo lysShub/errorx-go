@@ -1,6 +1,7 @@
 package neterr_test
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -21,55 +22,40 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-/*
-	type timeoutErr struct{ error }
-
-	func Timeout(err error) error {
-		if err == nil {
-			return nil
-		}
-		return &timeoutErr{error: err}
-	}
-	func IsTimeout(err error) bool {
-		timeout := UnwrapTo[interface{ Timeout() bool }](err)
-		if timeout == nil {
-			return false
-		} else {
-			return timeout.Timeout()
-		}
-	}
-	func (t *timeoutErr) Error() string { return t.error.Error() }
-	func (t *timeoutErr) Unwrap() error { return t.error }
-	func (t *timeoutErr) Timeout() bool { return true }
-*/
-
-func Test_Temporary(t *testing.T) {
-	var e1 = errorx.WithT(&net.DNSError{IsTemporary: true}, "temp")
-	if !errorx.IsTemp(e1) {
-		t.Fatal("expect temporary")
+func Test_Base(t *testing.T) {
+	var tests = []struct {
+		name  string
+		check func(error) bool
+		err   error
+	}{
+		{"ConnectReset", neterr.ConnectReset, neterr.ErrConnectReset},
+		{"ConnectRefused", neterr.ConnectRefused, neterr.ErrConnectRefused},
+		{"ConnectAborted", neterr.ConnectAborted, neterr.ErrConnectAborted},
+		{"NetworkUnreach", neterr.NetworkUnreach, neterr.ErrNetworkUnreach},
+		{"BuffSize", neterr.BuffSize, neterr.ErrBuffSize},
+		{"AddrNotAvail", neterr.AddrNotAvail, neterr.ErrAddrNotAvail},
+		{"NetTimeout", neterr.NetTimeout, neterr.ErrNetTimeout},
+		{"AddrInuse", neterr.AddrInuse, neterr.ErrAddrInuse},
+		{"WouldBlock", neterr.WouldBlock, neterr.ErrWouldBlock},
 	}
 
-	var e2 = errorx.WithStack(errorx.New("error"))
-	if errorx.IsTemp(e2) {
-		t.Fatal("expect not temporary")
-	}
-
-	var e3 error = nil
-	if errorx.IsTemp(e3) {
-		t.Fatal("expect not temporary")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !tt.check(tt.err) {
+				t.Fatalf("expect matched: %v", tt.err)
+			}
+			if !tt.check(errorx.WithStack(tt.err)) {
+				t.Fatalf("expect matched through wrapper: %v", tt.err)
+			}
+			if tt.check(errors.New("other")) {
+				t.Fatal("expect not matched: other error")
+			}
+			if tt.check(nil) {
+				t.Fatal("expect not matched: nil")
+			}
+		})
 	}
 }
-
-// func Test_Timeout(t *testing.T) {
-// 	var e1 = errorx.WithMessage(&net.DNSError{IsTimeout: true}, "temp")
-// 	require.True(t, IsTimeout(e1))
-//
-// 	var e2 = errorx.WithStack(errorx.New("error"))
-// 	require.False(t, IsTimeout(e2))
-//
-// 	var e3 error = nil
-// 	require.False(t, IsTimeout(e3))
-// }
 
 func Test_ConnectRefused(t *testing.T) {
 	_, err := (&http.Client{Timeout: time.Second}).Get(`http://localhost:12345`)
@@ -81,17 +67,6 @@ func Test_ConnectRefused(t *testing.T) {
 	}
 }
 
-func Test_Builtin(t *testing.T) {
-	if !neterr.ConnectRefused(neterr.ErrConnectRefused) {
-		t.Fatal("expect connect refused")
-	}
-	if !neterr.NetworkUnreach(neterr.ErrNetworkUnreach) {
-		t.Fatal("expect network unreach")
-	}
-	if !neterr.BuffSize(neterr.ErrBuffSize) {
-		t.Fatal("expect buff size")
-	}
-}
 func Test_ErrAddrInuse(t *testing.T) {
 	go func() {
 		http.ListenAndServe(":12345", nil)
@@ -103,6 +78,7 @@ func Test_ErrAddrInuse(t *testing.T) {
 		t.Fatalf("expect addr inuse, got %v", err)
 	}
 }
+
 func Test_ErrNetTimeout(t *testing.T) {
 	var e1 = errorx.WithT(&net.DNSError{IsTimeout: true}, "temp")
 	if !neterr.NetTimeout(e1) {

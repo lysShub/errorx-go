@@ -67,9 +67,3 @@ var ErrWouldBlock = unix.EWOULDBLOCK
 func wouldBlock(err error) bool {
 	return errors.Is(err, unix.EWOULDBLOCK)
 }
-
-var ErrAccessDenied = unix.EACCES
-
-func accessDenied(err error) bool {
-	return errors.Is(err, unix.EACCES)
-}

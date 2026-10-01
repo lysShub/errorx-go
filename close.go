@@ -27,7 +27,11 @@ func (c *CloseErr) Close(fn func() (errs []error)) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed.Load() {
-		return c.err
+		if c.err != nil && c.err == c.ErrClosed {
+			return WithT(c.err, newStack())
+		} else {
+			return c.err
+		}
 	}
 	c.closed.Store(true)
 
