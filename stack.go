@@ -52,21 +52,18 @@ func newStack() Stack {
 	return Stack(slices.Clone(pcs[:n]))
 }
 
-type strerr string             //
-func (s strerr) Error() string { return string(s) }
-
 func New(msg string) error {
 	if debug.Debug() {
 		debug.NotEqual(msg, "", "errorx: empty message")
 	}
-	return WithT(strerr(msg), newStack())
+	return WithT(StringErr(msg), newStack())
 }
 func Errorf(f string, args ...any) error {
 	msg := fmt.Sprintf(f, args...)
 	if debug.Debug() {
 		debug.NotEqual(msg, "", "errorx: empty message")
 	}
-	return WithT(strerr(msg), newStack())
+	return WithT(StringErr(msg), newStack())
 }
 
 func WithStack(err error) error {
