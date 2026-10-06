@@ -15,18 +15,18 @@ func Warn(msg string) error {
 	if debug.Debug() {
 		debug.NotEqual(msg, "", "errorx: empty message")
 
-		return WithT(WithT(strerr(msg), newStack()), temp)
+		return WithT(WithT(StringErr(msg), newStack()), temp)
 	}
-	return WithT(strerr(msg), temp)
+	return WithT(StringErr(msg), temp)
 }
 func Warnf(f string, args ...any) error {
 	msg := fmt.Sprintf(f, args...)
 	if debug.Debug() {
 		debug.NotEqual(msg, "", "errorx: empty message")
 
-		return WithT(WithT(strerr(msg), newStack()), temp)
+		return WithT(WithT(StringErr(msg), newStack()), temp)
 	}
-	return WithT(strerr(msg), temp)
+	return WithT(StringErr(msg), temp)
 }
 
 func WithTemp(err error) error {
