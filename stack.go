@@ -4,40 +4,40 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"slices"
 	"strconv"
 
 	"github.com/lysShub/debug-go"
 )
 
-type stack [32]uintptr
-type Stack = *stack
+type Stack []uintptr
 
-func (t Stack) Format(s fmt.State, verb rune) {
+func (s Stack) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 'v', 's':
-		fs := runtime.CallersFrames(t[:])
-		if s.Flag('+') {
-			s.Write([]byte{'\n'})
+		fs := runtime.CallersFrames(s)
+		if state.Flag('+') {
+			state.Write([]byte{'\n'})
 			for {
 				f, more := fs.Next()
-				io.WriteString(s, f.File)
+				io.WriteString(state, f.File)
 
 				var b [32]byte = [32]byte{0: ':'}
 				num := strconv.AppendInt(b[1:1], int64(f.Line), 10) // not possible exceed
 				b[len(num)+1] = '\n'
 
-				s.Write(b[:len(num)+2])
+				state.Write(b[:len(num)+2])
 				if !more {
 					break
 				}
 			}
 		} else {
 			f, _ := fs.Next()
-			io.WriteString(s, f.File)
+			io.WriteString(state, f.File)
 
 			var b [32]byte = [32]byte{0: ':'}
 			num := strconv.AppendInt(b[1:1], int64(f.Line), 10) // not possible exceed
-			s.Write(b[:len(num)+1])
+			state.Write(b[:len(num)+1])
 		}
 	default:
 	}
@@ -47,9 +47,9 @@ func NewStack() Stack { return newStack() }
 
 //go:noinline
 func newStack() Stack {
-	var s stack
-	runtime.Callers(3, s[:])
-	return &s
+	var pcs [64]uintptr
+	n := runtime.Callers(3, pcs[:])
+	return Stack(slices.Clone(pcs[:n]))
 }
 
 type strerr string             //

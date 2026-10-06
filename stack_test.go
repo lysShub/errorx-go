@@ -3,6 +3,7 @@ package errorx_test
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"testing"
 
@@ -216,7 +217,7 @@ func Test_Trace(t *testing.T) {
 		if errorx.T[errorx.Stack](e1) == nil {
 			t.Fatal("expect stack not nil")
 		}
-		if errorx.T[errorx.Stack](e0) == errorx.T[errorx.Stack](e1) {
+		if slices.Equal(errorx.T[errorx.Stack](e0), errorx.T[errorx.Stack](e1)) {
 			t.Fatal("expect distinct stack (each WithStack adds a new one)")
 		}
 	})
